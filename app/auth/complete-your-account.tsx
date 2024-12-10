@@ -1,21 +1,30 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useForm } from "react-hook-form";
+import { set, useForm } from "react-hook-form";
 import { useRouter } from "expo-router";
 import { useUser } from "@clerk/clerk-expo";
+import { useEffect, useMemo, useState } from "react";
 
 import TextInput from "@/components/Forms/TextInput";
 import RadioButtonInput from "@/components/Forms/RadioButtonInput";
 
 const CompleteYourAccountScreen = () => {
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { control, handleSubmit } = useForm({
+
+  const { control, handleSubmit, setError, setValue } = useForm({
     defaultValues: {
-      full_name: user?.fullName || "",
-      username: user?.username || "",
-      gender: "male",
+      full_name: "",
+      username: "",
+      gender: "",
     },
   });
 
@@ -23,6 +32,7 @@ const CompleteYourAccountScreen = () => {
     const { full_name, username, gender } = data;
 
     try {
+      setIsLoading(true);
       await user?.update({
         username: username,
         firstName: full_name.split(" ")[0],
@@ -36,10 +46,30 @@ const CompleteYourAccountScreen = () => {
       await user?.reload();
 
       return router.push("/(tabs)");
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      if (error.message === "That username is taken. Please try another.") {
+        return setError("username", { message: "Username is already taken" });
+      }
+
+      return setError("full_name", { message: "An error occurred" });
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!isLoaded) {
+      return;
+    }
+
+    if (!user) {
+      return;
+    }
+
+    setValue("full_name", user?.fullName || "");
+    setValue("username", user?.username || "");
+    setValue("gender", String(user?.unsafeMetadata?.gender) || "");
+  }, [isLoaded, user]);
 
   return (
     <View
@@ -88,10 +118,16 @@ const CompleteYourAccountScreen = () => {
 
         <View style={{ marginTop: 20 }}>
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, { opacity: isLoading ? 0.7 : 1 }]}
             onPress={handleSubmit(onSubmit)}
+            disabled={isLoading}
           >
-            <Text style={styles.buttonText}>Complete account</Text>
+            {isLoading ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : null}
+            <Text style={styles.buttonText}>
+              {isLoading ? "Loading..." : "Complete Account"}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -139,6 +175,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+    flexDirection: "row",
+    gap: 10,
   },
   buttonText: {
     color: "white",

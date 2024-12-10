@@ -1,9 +1,8 @@
 import SocialLoginButton from "@/components/SocialLoginButton";
-import { Button, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect } from "react";
-import { SignedIn, useClerk } from "@clerk/clerk-expo";
 
 export const useWarmUpBrowser = () => {
   useEffect(() => {
@@ -20,7 +19,6 @@ WebBrowser.maybeCompleteAuthSession();
 
 const AuthScreen = () => {
   useWarmUpBrowser();
-  const { signOut } = useClerk();
   const insets = useSafeAreaInsets();
   return (
     <View
@@ -40,11 +38,6 @@ const AuthScreen = () => {
         <SocialLoginButton strategy="facebook" />
         <SocialLoginButton strategy="google" />
         <SocialLoginButton strategy="apple" />
-
-        <SignedIn>
-          <Text style={styles.description}>You are signed in.</Text>
-          <Button title="Logout" onPress={() => signOut()} />
-        </SignedIn>
       </View>
     </View>
   );

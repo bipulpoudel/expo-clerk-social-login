@@ -1,4 +1,4 @@
-import { useOAuth } from "@clerk/clerk-expo";
+import { useOAuth, useUser } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
@@ -28,7 +28,7 @@ const SocialLoginButton = ({
   };
 
   const { startOAuthFlow } = useOAuth({ strategy: getStrategy() });
-
+  const { user } = useUser();
   const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
@@ -67,6 +67,7 @@ const SocialLoginButton = ({
       if (createdSessionId) {
         console.log("Session created", createdSessionId);
         setActive!({ session: createdSessionId });
+        await user?.reload();
       } else {
         // Use signIn or signUp returned from startOAuthFlow
         // for next steps, such as MFA
